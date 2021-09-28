@@ -95,6 +95,7 @@ def main():
             #copy name
             click(455, 189)
             time.sleep(wait)
+            name_paste = clipboard.paste()
             page = "more info"
             take_screenshot(page)  
 
