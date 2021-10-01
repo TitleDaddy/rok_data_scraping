@@ -49,7 +49,22 @@ def main():
             ]
         )
 
+    page = "ranking"
+    take_screenshot(page)
+    ranking = image_to_text("my_name", page, False)
+
+    if ranking == "1000+":
+        check_ranking = False
+    else:
+        check_ranking = True
+
     for n in range(900):
+
+        if check_ranking:
+            on_player = False
+            if str(n) == ranking:
+                on_player = True
+
         if n <= 3:
             print(f"\n\n\nPROFILE {number}")
             y = 300 + 120 * n
@@ -108,7 +123,8 @@ def main():
             time.sleep(wait)
             print ("SECOND BIT")
 
-        player_info = image_to_text(name_paste)
+        page = "profile"
+        player_info = image_to_text(name_paste, page, on_player)
         with open(
             csv_file, "a+", encoding="UTF8", newline=""
         ) as invoice_master:
@@ -161,6 +177,7 @@ def take_screenshot(page):
     powerfilename = os.path.join(BASE_DIR, "static", "power.jpg")
     killsfilename = os.path.join(BASE_DIR, "static", "kills.jpg")
     deathsfilename = os.path.join(BASE_DIR, "static", "deaths.jpg")
+    rankingfilename = os.path.join(BASE_DIR, "static", "ranking.jpg")
 
     # width = 1920
     # height = 1080
@@ -254,6 +271,16 @@ def take_screenshot(page):
             )
         )
         img_deaths.save(deathsfilename)
+    elif page == "ranking":
+        img_ranking = img_resize.crop(
+            (
+                temp["ranking"]["x0"],
+                temp["ranking"]["y0"],
+                temp["ranking"]["x1"],
+                temp["ranking"]["y1"],
+            )
+        )
+        img_ranking.save(rankingfilename)
     print("finished screenshot")
     return
 
@@ -281,13 +308,14 @@ def read_text(image):
     text = pytesseract.image_to_string(image, lang="eng+kor+vie+jap+sun_chi")
     return text
 
-def image_to_text(name_paste):
+def image_to_text(name_paste, page, on_player):
     idfilename = os.path.join(BASE_DIR, "static", "id.jpg")
     namefilename = os.path.join(BASE_DIR, "static", "name.jpg")
     alliancefilename = os.path.join(BASE_DIR, "static", "alliance.jpg")
     powerfilename = os.path.join(BASE_DIR, "static", "power.jpg")
     killsfilename = os.path.join(BASE_DIR, "static", "kills.jpg")
     deathsfilename = os.path.join(BASE_DIR, "static", "deaths.jpg")
+    rankingfilename = os.path.join(BASE_DIR, "static", "ranking.jpg")
 
     file_list = [
         idfilename,
@@ -295,54 +323,70 @@ def image_to_text(name_paste):
         alliancefilename,
         powerfilename,
         killsfilename,
-        deathsfilename
+        deathsfilename,
     ]
     round = 1
     context = {}
-    for file in file_list:
-        image = cv2.imread(file)
+    if page == "profile":
+        for file in file_list:
+            image = cv2.imread(file)
+            gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            if round == 1:
+                ret, thresh_image = cv2.threshold(
+                    gray_image, 127, 255, cv2.THRESH_BINARY_INV
+                )
+            elif round == 2:
+                ret, thresh_image = cv2.threshold(
+                    gray_image, 180, 255, cv2.THRESH_BINARY_INV
+                )
+            elif round ==3 or round == 6:
+                ret, thresh_image = cv2.threshold(
+                    gray_image, 180, 255, cv2.THRESH_BINARY_INV
+                )
+            else:
+                ret, thresh_image = cv2.threshold(
+                    gray_image, 220, 255, cv2.THRESH_BINARY_INV
+                )
+            thresh_image = cv2.GaussianBlur(thresh_image, (5, 5), 0)
+            # cv2.imshow('image window', thresh_image)
+            # cv2.waitKey(0)
+            # cv2.destroyAllWindows()
+            text = read_text(thresh_image)
+            if round == 1:
+                text = text.split()
+                context["id"] = text
+                print(f"ID: {text}")
+            if round == 2:
+                if on_player:
+                    context["name"] = text
+                else:
+                    context["name"] = name_paste
+                print(f"NAME: {name_paste}")
+            if round == 3:
+                context["alliance"] = text
+                print(f"ALLIANCE: {text}")
+            if round == 4:
+                context["power"] = text
+                print(f"POWER: {text}")
+            if round == 5:
+                context["kills"] = text
+                print(f"KILLS: {text}")
+            if round == 6:
+                context["deaths"] = text
+                print(f"DEATHS: {text}")
+            round +=1
+
+    if page == "ranking":
+        image = cv2.imread(rankingfilename)
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        if round == 1:
-            ret, thresh_image = cv2.threshold(
-                gray_image, 127, 255, cv2.THRESH_BINARY_INV
-            )
-        elif round == 2:
-            ret, thresh_image = cv2.threshold(
-                gray_image, 180, 255, cv2.THRESH_BINARY_INV
-            )
-        elif round ==3 or round == 6:
-            ret, thresh_image = cv2.threshold(
-                gray_image, 180, 255, cv2.THRESH_BINARY_INV
-            )
-        else:
-            ret, thresh_image = cv2.threshold(
-                gray_image, 220, 255, cv2.THRESH_BINARY_INV
-            )
+        ret, thresh_image = cv2.threshold(
+            gray_image, 240, 255, cv2.THRESH_BINARY_INV
+        )
         thresh_image = cv2.GaussianBlur(thresh_image, (5, 5), 0)
-        # cv2.imshow('image window', thresh_image)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
         text = read_text(thresh_image)
-        if round == 1:
-            text = text.split()
-            context["id"] = text
-            print(f"ID: {text}")
-        if round == 2:
-            context["name"] = name_paste
-            print(f"NAME: {name_paste}")
-        if round == 3:
-            context["alliance"] = text
-            print(f"ALLIANCE: {text}")
-        if round == 4:
-            context["power"] = text
-            print(f"POWER: {text}")
-        if round == 5:
-            context["kills"] = text
-            print(f"KILLS: {text}")
-        if round == 6:
-            context["deaths"] = text
-            print(f"DEATHS: {text}")
-        round +=1
+        context["ranking"] = text
+        print(f"RANKING: {text}")
+
     return context
 
 main()
