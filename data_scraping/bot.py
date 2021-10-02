@@ -26,6 +26,7 @@ pytesseract.pytesseract.tesseract_cmd = (
     r"C:\\Program Files\\Tesseract-OCR\\tesseract.exe"  # Location of tesseract.eve file
 )
 
+
 def main():
     # while True:
     #     click(50,50)
@@ -34,20 +35,9 @@ def main():
     number = 1
     csv_file_name = f"kingdom_analytics_{dt.date.today()}.csv"
     csv_file = os.path.join(BASE_DIR, csv_file_name)
-    with open(
-        csv_file, "w+", encoding="UTF8", newline=""
-    ) as csv_master:
+    with open(csv_file, "w+", encoding="UTF8", newline="") as csv_master:
         writer = csv.writer(csv_master)
-        writer.writerow([
-            "ID",
-            "NAME",
-            "ALLIANCE",
-            "POWER",
-            "KILLS",
-            "DEATHS",
-            "DATE"
-            ]
-        )
+        writer.writerow(["ID", "NAME", "ALLIANCE", "POWER", "KILLS", "DEATHS", "DATE"])
 
     page = "ranking"
     take_screenshot(page)
@@ -76,15 +66,15 @@ def main():
             take_screenshot(page)
 
             # open more infos
-            click(468, 796)           
+            click(468, 796)
             time.sleep(wait)
 
-            #copy name
+            # copy name
             click(455, 189)
             time.sleep(wait)
             name_paste = clipboard.paste()
             page = "more info"
-            take_screenshot(page)           
+            take_screenshot(page)
 
             # close more info
             click(1677, 68)
@@ -93,7 +83,7 @@ def main():
             # close profile
             click(1637, 128)
             time.sleep(wait)
-            print ("FIRST BIT")
+            print("FIRST BIT")
         if n > 3:
             print(f"\n\n\nPROFILE {number}")
 
@@ -107,12 +97,12 @@ def main():
             click(468, 796)
             time.sleep(wait)
 
-            #copy name
+            # copy name
             click(455, 189)
             time.sleep(wait)
             name_paste = clipboard.paste()
             page = "more info"
-            take_screenshot(page)  
+            take_screenshot(page)
 
             # close more info
             click(1677, 68)
@@ -121,13 +111,11 @@ def main():
             # close profile
             click(1637, 128)
             time.sleep(wait)
-            print ("SECOND BIT")
+            print("SECOND BIT")
 
         page = "profile"
         player_info = image_to_text(name_paste, page, on_player)
-        with open(
-            csv_file, "a+", encoding="UTF8", newline=""
-        ) as invoice_master:
+        with open(csv_file, "a+", encoding="UTF8", newline="") as invoice_master:
             writer = csv.writer(invoice_master)
             writer.writerow(
                 [
@@ -137,7 +125,7 @@ def main():
                     player_info["power"],
                     player_info["kills"],
                     player_info["deaths"],
-                    dt.date.today()
+                    dt.date.today(),
                 ]
             )
         number += 1
@@ -212,7 +200,7 @@ def take_screenshot(page):
             )
         else:
             img_cropped = img.crop((1, 40, width_crop, height_crop + 40 - 1))
-        img_resize = img_cropped.resize((1920,1080), Image.ANTIALIAS)
+        img_resize = img_cropped.resize((1920, 1080), Image.ANTIALIAS)
         img_resize.save(jpgfilenamename)
 
     if page == "profile":
@@ -302,11 +290,13 @@ def get_window_size(hwnd):
 
     return context
 
+
 def read_text(image):
     print("converting")
     custom_config = r"--oem 3 kor+chi_sim+eng+jpn+vie --psm 6"
     text = pytesseract.image_to_string(image, lang="eng+kor+vie+jap+sun_chi")
     return text
+
 
 def image_to_text(name_paste, page, on_player):
     idfilename = os.path.join(BASE_DIR, "static", "id.jpg")
@@ -339,7 +329,7 @@ def image_to_text(name_paste, page, on_player):
                 ret, thresh_image = cv2.threshold(
                     gray_image, 180, 255, cv2.THRESH_BINARY_INV
                 )
-            elif round ==3 or round == 6:
+            elif round == 3 or round == 6:
                 ret, thresh_image = cv2.threshold(
                     gray_image, 180, 255, cv2.THRESH_BINARY_INV
                 )
@@ -374,19 +364,18 @@ def image_to_text(name_paste, page, on_player):
             if round == 6:
                 context["deaths"] = text
                 print(f"DEATHS: {text}")
-            round +=1
+            round += 1
 
     if page == "ranking":
         image = cv2.imread(rankingfilename)
         gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        ret, thresh_image = cv2.threshold(
-            gray_image, 240, 255, cv2.THRESH_BINARY_INV
-        )
+        ret, thresh_image = cv2.threshold(gray_image, 240, 255, cv2.THRESH_BINARY_INV)
         thresh_image = cv2.GaussianBlur(thresh_image, (5, 5), 0)
         text = read_text(thresh_image)
         context["ranking"] = text
         print(f"RANKING: {text}")
 
     return context
+
 
 main()
