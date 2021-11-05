@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent
 nltk.download("punkt")
 
 pytesseract.pytesseract.tesseract_cmd = (
-    r"C:\\Program Files\\Tesseract-OCR\\tesseract.exe"  # Location of tesseract.eve file
+    r"data_scraping\support\tesseract.exe"  # Location of tesseract.eve file
 )
 
 
@@ -41,19 +41,22 @@ def main():
 
     page = "ranking"
     take_screenshot(page)
-    ranking = image_to_text("my_name", page, False)
-
+    ranking = image_to_text("my_name", page, False)["ranking"]
+    ranking = ranking.split("\n")[0]
+    # ranking = ranking.split()
     if ranking == "1000+":
         check_ranking = False
     else:
         check_ranking = True
 
-    for n in range(900):
+    for n in range(995):
 
         if check_ranking:
             on_player = False
-            if str(n) == ranking:
+            if str(n+1) == ranking:
                 on_player = True
+
+        name_paste = None
 
         if n <= 3:
             print(f"\n\n\nPROFILE {number}")
@@ -69,12 +72,16 @@ def main():
             click(468, 796)
             time.sleep(wait)
 
-            # copy name
-            click(455, 189)
-            time.sleep(wait)
-            name_paste = clipboard.paste()
-            page = "more info"
-            take_screenshot(page)
+            if not on_player:
+                # copy name
+                click(455, 189)
+                time.sleep(wait)
+                name_paste = clipboard.paste()
+                page = "more info"
+                take_screenshot(page)
+            else:
+                page = "more info"
+                take_screenshot(page, on_player)
 
             # close more info
             click(1677, 68)
@@ -97,12 +104,16 @@ def main():
             click(468, 796)
             time.sleep(wait)
 
-            # copy name
-            click(455, 189)
-            time.sleep(wait)
-            name_paste = clipboard.paste()
-            page = "more info"
-            take_screenshot(page)
+            if not on_player:
+                # copy name
+                click(455, 189)
+                time.sleep(wait)
+                name_paste = clipboard.paste()
+                page = "more info"
+                take_screenshot(page)
+            else:
+                page = "more info"
+                take_screenshot(page, on_player)
 
             # close more info
             click(1677, 68)
@@ -156,7 +167,7 @@ def click(x, y):
     return
 
 
-def take_screenshot(page):
+def take_screenshot(page, on_player = False):
     print("taking screenshot...")
     jpgfilenamename = os.path.join(BASE_DIR, "static", "screenshot.jpg")
     idfilename = os.path.join(BASE_DIR, "static", "id.jpg")
@@ -228,14 +239,24 @@ def take_screenshot(page):
                 temp["alliance"]["y1"],
             )
         )
-        img_power = img_resize.crop(
-            (
-                temp["power"]["x0"],
-                temp["power"]["y0"],
-                temp["power"]["x1"],
-                temp["power"]["y1"],
+        if on_player:
+            img_power = img_resize.crop(
+                (
+                    temp["power_on_player"]["x0"],
+                    temp["power_on_player"]["y0"],
+                    temp["power_on_player"]["x1"],
+                    temp["power_on_player"]["y1"],
+                )
             )
-        )
+        else:     
+            img_power = img_resize.crop(
+                (
+                    temp["power"]["x0"],
+                    temp["power"]["y0"],
+                    temp["power"]["x1"],
+                    temp["power"]["y1"],
+                )
+            )
         img_kills = img_resize.crop(
             (
                 temp["kills"]["x0"],
@@ -250,14 +271,24 @@ def take_screenshot(page):
         img_power.save(powerfilename)
         img_kills.save(killsfilename)
     elif page == "more info":
-        img_deaths = img_resize.crop(
-            (
-                temp["deaths"]["x0"],
-                temp["deaths"]["y0"],
-                temp["deaths"]["x1"],
-                temp["deaths"]["y1"],
+        if on_player:
+            img_deaths = img_resize.crop(
+                (
+                    temp["deaths_on_player"]["x0"],
+                    temp["deaths_on_player"]["y0"],
+                    temp["deaths_on_player"]["x1"],
+                    temp["deaths_on_player"]["y1"],
+                )
             )
-        )
+        else:     
+            img_deaths = img_resize.crop(
+                (
+                    temp["deaths"]["x0"],
+                    temp["deaths"]["y0"],
+                    temp["deaths"]["x1"],
+                    temp["deaths"]["y1"],
+                )
+            )
         img_deaths.save(deathsfilename)
     elif page == "ranking":
         img_ranking = img_resize.crop(
@@ -306,7 +337,6 @@ def image_to_text(name_paste, page, on_player):
     killsfilename = os.path.join(BASE_DIR, "static", "kills.jpg")
     deathsfilename = os.path.join(BASE_DIR, "static", "deaths.jpg")
     rankingfilename = os.path.join(BASE_DIR, "static", "ranking.jpg")
-
     file_list = [
         idfilename,
         namefilename,
@@ -343,27 +373,63 @@ def image_to_text(name_paste, page, on_player):
             # cv2.destroyAllWindows()
             text = read_text(thresh_image)
             if round == 1:
-                text = text.split()
-                context["id"] = text
-                print(f"ID: {text}")
+                try:
+                    text = text.split(")")[0]
+                    text = text.split("")[0]
+                    text = text.split("\n")[0]
+                finally:
+                    context["id"] = text
+                    print(f"ID: {text}")
             if round == 2:
-                if on_player:
-                    context["name"] = text
-                else:
-                    context["name"] = name_paste
-                print(f"NAME: {name_paste}")
+                try:
+                    text = text.split("")[0]
+                    text = text.split("\n")[0]
+                finally:
+                    if on_player:
+                        context["name"] = text
+                    else:
+                        context["name"] = name_paste
+                    print(f"NAME: {context['name']}")
             if round == 3:
-                context["alliance"] = text
-                print(f"ALLIANCE: {text}")
+                try:
+                    text_lines = text.split("\n")
+                    for line in text_lines:
+                        if len(line) > 3:
+                            text = line
+                    if text[0] == "(":
+                        text = "[" + text.split("(")[1]
+                    if ")" in text:
+                        text_letters = list(text)
+                        text_letters.insert(text_letters.index(")"),"]")
+                        del text_letters[text_letters.index(")")]
+                        text = "".join(text_letters)
+                finally:
+                    context["alliance"] = text
+                    print(f"ALLIANCE: {text}")
             if round == 4:
-                context["power"] = text
-                print(f"POWER: {text}")
+                try:
+                    text = ",".join(text.split("."))
+                    text = text.split("")[0]
+                    text = text.split("\n")[0]
+                finally:
+                    context["power"] = text
+                    print(f"POWER: {text}")
             if round == 5:
-                context["kills"] = text
-                print(f"KILLS: {text}")
+                try:
+                    text = ",".join(text.split("."))
+                    text = text.split("")[0]
+                    text = text.split("\n")[0]
+                finally:
+                    context["kills"] = text
+                    print(f"KILLS: {text}")
             if round == 6:
-                context["deaths"] = text
-                print(f"DEATHS: {text}")
+                try:
+                    text = ",".join(text.split("."))
+                    text = text.split("")[0]
+                    text = text.split("\n")[0]
+                finally:
+                    context["deaths"] = text
+                    print(f"DEATHS: {text}")
             round += 1
 
     if page == "ranking":
