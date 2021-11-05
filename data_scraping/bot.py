@@ -1,22 +1,19 @@
+import clipboard
+import csv
+import cv2
+import datetime as dt
+import nltk
+import os
+from pathlib import Path
+from PIL import Image
+import pyautogui
+import pytesseract
+from screen_coords import templates as temp
+import time
 import win32gui
 import win32api
 import win32con
 import win32ui
-import time
-import ctypes
-from screen_coords import templates as temp
-import cv2
-import numpy as np
-from pathlib import Path
-import os
-from PIL import Image
-import pyautogui
-import pytesseract
-import nltk
-import datetime as dt
-import openpyxl
-import csv
-import clipboard
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -41,19 +38,18 @@ def main():
 
     page = "ranking"
     take_screenshot(page)
-    ranking = image_to_text("my_name", page, False)["ranking"]
-    ranking = ranking.split("\n")[0]
+    user_ranking = image_to_text("my_name", page, False)["ranking"]
+    user_ranking = user_ranking.split("\n")[0]
     # ranking = ranking.split()
-    if ranking == "1000+":
+    if user_ranking == "1000+":
         check_ranking = False
     else:
         check_ranking = True
 
     for n in range(995):
-
+        on_player = False
         if check_ranking:
-            on_player = False
-            if str(n+1) == ranking:
+            if str(n + 1) == user_ranking:
                 on_player = True
 
         name_paste = None
@@ -167,7 +163,7 @@ def click(x, y):
     return
 
 
-def take_screenshot(page, on_player = False):
+def take_screenshot(page, on_player=False):
     print("taking screenshot...")
     jpgfilenamename = os.path.join(BASE_DIR, "static", "screenshot.jpg")
     idfilename = os.path.join(BASE_DIR, "static", "id.jpg")
@@ -248,7 +244,7 @@ def take_screenshot(page, on_player = False):
                     temp["power_on_player"]["y1"],
                 )
             )
-        else:     
+        else:
             img_power = img_resize.crop(
                 (
                     temp["power"]["x0"],
@@ -280,7 +276,7 @@ def take_screenshot(page, on_player = False):
                     temp["deaths_on_player"]["y1"],
                 )
             )
-        else:     
+        else:
             img_deaths = img_resize.crop(
                 (
                     temp["deaths"]["x0"],
@@ -400,7 +396,7 @@ def image_to_text(name_paste, page, on_player):
                         text = "[" + text.split("(")[1]
                     if ")" in text:
                         text_letters = list(text)
-                        text_letters.insert(text_letters.index(")"),"]")
+                        text_letters.insert(text_letters.index(")"), "]")
                         del text_letters[text_letters.index(")")]
                         text = "".join(text_letters)
                 finally:
